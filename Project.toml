@@ -1,0 +1,8 @@
+name = "PkgApp"
+uuid = "a24ec6d8-2a0b-4807-af8f-d1aaa185a3d4"
+authors = ["Simon Byrne <simonbyrne@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

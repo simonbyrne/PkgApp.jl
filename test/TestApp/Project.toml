@@ -1,0 +1,12 @@
+name = "TestApp"
+uuid = "5f8acd06-66a6-407f-9eda-599c91b471f9"
+authors = ["Simon Byrne <simonbyrne@gmail.com>"]
+version = "0.1.0"
+
+[apps.hello_function]
+type = "function"
+function = "TestApp.hello_world"
+
+[apps.hello_script]
+type = "script"
+script = "bin/hello_world.jl"
