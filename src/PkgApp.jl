@@ -1,42 +1,28 @@
 module PkgApp
 
-using Pkg
-
-#=
-operations:
-- build: create endpoints
+using Pkg, PackageCompiler, Libdl
 
 
-
-=#
-
-# 1) how do
-
-
-function add(pkgspec::PackageSpec)
-    APPDIR = joinpath(DEPOT_PATH[1], "apps")
-    mkpath(APPDIR)
-    tempappdir = mktempdir(APPDIR)
-    ctx = Pkg.Types.Context(env=Pkg.Types.EnvCache(tempappdir))
-    Pkg.add(ctx, [pkgspec])
-    pkgpath = Pkg.Operations.source_path(ctx.env.project_file, pkgspec, ctx.julia_version)
-
-end
-
-
-function build(ctx::Pkg.API.Context=Pkg.API.Context())
-    #cd(dirname(ctx.env.project_file)) do
-        Pkg.instantiate(ctx; verbose=true)
-    #end
+function build(ctx::Pkg.API.Context=Pkg.API.Context(); use_sysimage=false)
+    Pkg.instantiate(ctx; verbose=true)
     apps = get(ctx.env.project.other, "apps", Dict())
+    project = dirname(ctx.env.project_file)
+    @info "Building app" project
+    if use_sysimage
+        sysimage = joinpath("lib", "julia", "sys." * Libdl.dlext)
+        PackageCompiler.create_sysimage([ctx.env.pkg.name];
+            sysimage_path = joinpath(project, sysimage),
+            project)
+    else
+        sysimage = nothing
+    end
 
-    project_path = dirname(ctx.env.project_file)
     binpath = "bin"
     for (appname, appvals) in apps
         if haskey(appvals, "function")
-            create_function_wrapper(ctx, joinpath(binpath, appname), appvals["function"])
+            create_function_wrapper(ctx, joinpath(binpath, appname), appvals["function"]; sysimage)
         elseif haskey(appvals, "script")
-            create_script_wrapper(ctx, joinpath(binpath, appname), appvals["script"])
+            create_script_wrapper(ctx, joinpath(binpath, appname), appvals["script"]; sysimage)
         else
             error("invalid app")
         end
@@ -48,7 +34,7 @@ function make_executable(filename)
 end
 
 
-function create_function_wrapper(ctx::Pkg.Types.Context, filename, funcname)
+function create_function_wrapper(ctx::Pkg.Types.Context, filename, funcname; sysimage=nothing)
     julia = joinpath(Sys.BINDIR, Base.julia_exename())
     project_file = ctx.env.project_file
     filename_full = joinpath(dirname(project_file), filename)
@@ -56,29 +42,40 @@ function create_function_wrapper(ctx::Pkg.Types.Context, filename, funcname)
 
     pkgname = split(funcname, ".")[1]
     mkpath(dirname(filename_full))
-    @info "creating file" filename_full
+    if isnothing(sysimage)
+        sysimage_flag = ""
+    else
+        sysimage_flag = "--sysimage \"\$JULIA_PROJECT/$sysimage\""
+    end
+    @debug "creating file" filename_full
     open(filename_full, "w+") do io
         write(io, """
             #!/bin/sh
-            export JULIA_PROJECT="\$(dirname "\$(realpath "\$0")")/$project_from_filedir"
-            $julia --startup-file=no -e 'import $pkgname; $funcname(ARGS)' "\$@"
+            JULIA_PROJECT="\$(dirname "\$(realpath "\$0")")/$project_from_filedir"
+            $julia --project="\$JULIA_PROJECT" $sysimage_flag --startup-file=no -e 'import $pkgname; $funcname(ARGS)' "\$@"
             """)
     end
     make_executable(filename_full)
 end
-function create_script_wrapper(ctx::Pkg.Types.Context, filename, script)
+function create_script_wrapper(ctx::Pkg.Types.Context, filename, script; sysimage=nothing)
     julia = joinpath(Sys.BINDIR, Base.julia_exename())
     project_file = ctx.env.project_file
     filename_full = joinpath(dirname(project_file), filename)
     project_from_filedir = relpath(dirname(project_file), dirname(filename_full))
 
     mkpath(dirname(filename_full))
-    @info "creating file" filename_full
+    if isnothing(sysimage)
+        sysimage_flag = ""
+    else
+        sysimage_flag = "--sysimage \"\$JULIA_PROJECT/$sysimage\""
+    end
+
+    @debug "creating file" filename_full
     open(filename_full, "w+") do io
         write(io, """
             #!/bin/sh
-            export JULIA_PROJECT="\$(dirname "\$(realpath "\$0")")/$project_from_filedir"
-            $julia --startup-file=no "\$JULIA_PROJECT/$script" "\$@"
+            JULIA_PROJECT="\$(dirname "\$(realpath "\$0")")/$project_from_filedir"
+            $julia --project="\$JULIA_PROJECT" $sysimage_flag --startup-file=no "\$JULIA_PROJECT/$script" "\$@"
             """)
     end
     make_executable(filename_full)
