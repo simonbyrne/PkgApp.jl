@@ -1,6 +1,13 @@
 name: Run tests
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+      - trying
+      - staging
+    tags: '*'
+  pull_request:
 
 jobs:
   test:
