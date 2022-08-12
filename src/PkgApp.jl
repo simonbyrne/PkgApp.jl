@@ -51,7 +51,7 @@ function create_function_wrapper(ctx::Pkg.Types.Context, filename, funcname; sys
     open(filename_full, "w+") do io
         write(io, """
             #!/bin/sh
-            JULIA_PROJECT="\$(dirname "\$(realpath "\$0")")/$project_from_filedir"
+            JULIA_PROJECT="\$( cd -- "\$(dirname "\$0")/$project_from_filedir" >/dev/null 2>&1 ; pwd -P )"
             $julia --project="\$JULIA_PROJECT" $sysimage_flag --startup-file=no -e 'import $pkgname; $funcname(ARGS)' "\$@"
             """)
     end
@@ -74,7 +74,7 @@ function create_script_wrapper(ctx::Pkg.Types.Context, filename, script; sysimag
     open(filename_full, "w+") do io
         write(io, """
             #!/bin/sh
-            JULIA_PROJECT="\$(dirname "\$(realpath "\$0")")/$project_from_filedir"
+            JULIA_PROJECT="\$( cd -- "\$(dirname "\$0")/$project_from_filedir" >/dev/null 2>&1 ; pwd -P )"
             $julia --project="\$JULIA_PROJECT" $sysimage_flag --startup-file=no "\$JULIA_PROJECT/$script" "\$@"
             """)
     end
