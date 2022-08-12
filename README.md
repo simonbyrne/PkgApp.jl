@@ -13,9 +13,20 @@ type = "script"
 script = "hello_world.jl"
 ```
 
-Building this application will create an executable file wrapper `bin/hello_script` which will call this script with the appropriate environment set.
+Calling `PkgApp.build()` will create an executable file wrapper `bin/hello_script` which will call this script with the appropriate environment set.
 
-A more complicated application would consist of a regular Julia package containing a "main" function which takes an `ARGS` argument and returns a `Cint`. The entrypoint would then be specified as
+A more complicated application would consist of a regular Julia package containing a "main" function which takes an `ARGS` argument and returns a `Cint`, e.g.
+```julia
+module MyApp
+
+function hello_function(ARGS)::Cint
+    ...
+end
+
+end
+```
+
+The `Project.toml` would contain the module definition and entrypoint description
 ```toml
 name = "MyApp"
 
@@ -23,3 +34,5 @@ name = "MyApp"
 type = "function"
 function = "MyApp.hello_world"
 ```
+
+Calling `PkgApp.build()` will create an executable `bin/hello_function`.
