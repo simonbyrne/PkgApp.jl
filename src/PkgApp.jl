@@ -41,7 +41,7 @@ function create_function_wrapper(ctx::Pkg.Types.Context, filename, funcname; sys
     project_file = ctx.env.project_file
     filename_full = joinpath(dirname(project_file), filename)
     if Sys.iswindows()
-        filename_full = filename_full * ".cmd"
+        filename_full = filename_full * ".CMD"
     end
     
     pkgname = split(funcname, ".")[1]
@@ -73,7 +73,7 @@ function create_script_wrapper(ctx::Pkg.Types.Context, filename, script; sysimag
     project_file = ctx.env.project_file
     filename_full = joinpath(dirname(project_file), filename)
     if Sys.iswindows()
-        filename_full = filename_full * ".cmd"
+        filename_full = filename_full * ".CMD"
     end
     script_full = joinpath(dirname(project_file), script)
 
