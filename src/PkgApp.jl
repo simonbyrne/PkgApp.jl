@@ -57,7 +57,7 @@ function create_function_wrapper(ctx::Pkg.Types.Context, filename, funcname; sys
         if Sys.iswindows()
             write(io, """
                 @echo off
-                $julia --project="$project_file" $sysimage_flag --startup-file=no -e 'import $pkgname; $funcname(ARGS)' -- %*
+                $julia --project="$project_file" $sysimage_flag --startup-file=no -e "import $pkgname; $funcname(ARGS)" -- %*
                 """)
         else
             write(io, """
