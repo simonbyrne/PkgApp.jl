@@ -30,7 +30,9 @@ function build(ctx::Pkg.API.Context=Pkg.API.Context(); use_sysimage=false)
 end
 
 function make_executable(filename)
-    chmod(filename, stat(filename).mode & 0o777 | 0o111)
+    if !Sys.iswindows()
+        chmod(filename, stat(filename).mode & 0o777 | 0o111)
+    end
 end
 
 
@@ -38,22 +40,31 @@ function create_function_wrapper(ctx::Pkg.Types.Context, filename, funcname; sys
     julia = joinpath(Sys.BINDIR, Base.julia_exename())
     project_file = ctx.env.project_file
     filename_full = joinpath(dirname(project_file), filename)
-    project_from_filedir = relpath(dirname(project_file), dirname(filename_full))
-
+    if Sys.iswindows()
+        filename_full = filename_full * ".cmd"
+    end
+    
     pkgname = split(funcname, ".")[1]
     mkpath(dirname(filename_full))
     if isnothing(sysimage)
         sysimage_flag = ""
     else
-        sysimage_flag = "--sysimage \"\$JULIA_PROJECT/$sysimage\""
+        sysimage_full = joinpath(dirname(project_file), sysimage)
+        sysimage_flag = "--sysimage \"$sysimage_full\""
     end
     @debug "creating file" filename_full
     open(filename_full, "w+") do io
-        write(io, """
-            #!/bin/sh
-            JULIA_PROJECT="\$( cd -- "\$(dirname "\$0")/$project_from_filedir" >/dev/null 2>&1 ; pwd -P )"
-            $julia --project="\$JULIA_PROJECT" $sysimage_flag --startup-file=no -e 'import $pkgname; $funcname(ARGS)' "\$@"
-            """)
+        if Sys.iswindows()
+            write(io, """
+                @echo off
+                $julia --project="$project_file" $sysimage_flag --startup-file=no -e "import $pkgname; $funcname(ARGS)" -- %*
+                """)
+        else
+            write(io, """
+                #!/bin/sh
+                $julia --project="$project_file" $sysimage_flag --startup-file=no -e 'import $pkgname; $funcname(ARGS)' -- "\$@"
+                """)
+        end
     end
     make_executable(filename_full)
 end
@@ -61,22 +72,32 @@ function create_script_wrapper(ctx::Pkg.Types.Context, filename, script; sysimag
     julia = joinpath(Sys.BINDIR, Base.julia_exename())
     project_file = ctx.env.project_file
     filename_full = joinpath(dirname(project_file), filename)
-    project_from_filedir = relpath(dirname(project_file), dirname(filename_full))
+    if Sys.iswindows()
+        filename_full = filename_full * ".cmd"
+    end
+    script_full = joinpath(dirname(project_file), script)
 
     mkpath(dirname(filename_full))
     if isnothing(sysimage)
         sysimage_flag = ""
     else
-        sysimage_flag = "--sysimage \"\$JULIA_PROJECT/$sysimage\""
+        sysimage_full = joinpath(dirname(project_file), sysimage)
+        sysimage_flag = "--sysimage \"$sysimage_full\""
     end
 
     @debug "creating file" filename_full
     open(filename_full, "w+") do io
-        write(io, """
-            #!/bin/sh
-            JULIA_PROJECT="\$( cd -- "\$(dirname "\$0")/$project_from_filedir" >/dev/null 2>&1 ; pwd -P )"
-            $julia --project="\$JULIA_PROJECT" $sysimage_flag --startup-file=no "\$JULIA_PROJECT/$script" "\$@"
-            """)
+        if Sys.iswindows()
+            write(io, """
+                @echo off
+                $julia --project="$project_file" $sysimage_flag --startup-file=no -- "$script_full" %*
+                """)
+        else
+            write(io, """
+                #!/bin/sh
+                $julia --project="$project_file" $sysimage_flag --startup-file=no -- "$script_full" "\$@"
+                """)
+        end
     end
     make_executable(filename_full)
 end

@@ -1,6 +1,12 @@
 using Test
 using PkgApp
 
+if Sys.iswindows()
+    @show get(ENV, "PATHEXT", nothing)
+end
+
+execext = Sys.iswindows() ? ".cmd" : ""
+
 function with_temp_project(fn, pkgdir)
     temppkgdir = tempname()
     cp(pkgdir, temppkgdir)
@@ -19,22 +25,31 @@ end
 with_temp_project(joinpath(@__DIR__, "TestApp")) do pkgdir
     PkgApp.build(;use_sysimage=false)
 
-    @test read(`$pkgdir/bin/hello_function`, String) == "hello from $(pwd())\n"
-    @test read(`$pkgdir/bin/hello_function "aa bb" cc`, String) == "hello aa bb, cc\n"
+    bindir = joinpath(pkgdir, "bin")
+    @show readdir(bindir)
 
-    @test read(`$pkgdir/bin/hello_script`, String) == "hello from $(pwd())\n"
-    @test read(`$pkgdir/bin/hello_script "aa bb" cc`, String) == "hello aa bb, cc\n"
+    withenv("PATH" => string(ENV["PATH"], Sys.iswindows() ? ";" : ":", bindir)) do
+        @test read(`hello_function`, String) == "hello from $(pwd())\n"
+        @test read(`hello_function "aa bb" cc`, String) == "hello aa bb, cc\n"
 
+        @test read(`hello_script`, String) == "hello from $(pwd())\n"
+        @test read(`hello_script "aa bb" cc`, String) == "hello aa bb, cc\n"
+    end
 end
 
+if Sys.WORD_SIZE == 64
+    with_temp_project(joinpath(@__DIR__, "TestApp")) do pkgdir
+        PkgApp.build(;use_sysimage=true)
+        bindir = joinpath(pkgdir, "bin")
+        @show readdir(bindir)
 
-with_temp_project(joinpath(@__DIR__, "TestApp")) do pkgdir
-    PkgApp.build(;use_sysimage=true)
-
-    @test read(`$pkgdir/bin/hello_function`, String) == "hello from $(pwd())\n"
-    @test read(`$pkgdir/bin/hello_function "aa bb" cc`, String) == "hello aa bb, cc\n"
-
-    @test read(`$pkgdir/bin/hello_script`, String) == "hello from $(pwd())\n"
-    @test read(`$pkgdir/bin/hello_script "aa bb" cc`, String) == "hello aa bb, cc\n"
-
+        withenv("PATH" => string(ENV["PATH"], Sys.iswindows() ? ";" : ":", bindir)) do
+    
+            @test read(`hello_function`, String) == "hello from $(pwd())\n"
+            @test read(`hello_function "aa bb" cc`, String) == "hello aa bb, cc\n"
+    
+            @test read(`hello_script`, String) == "hello from $(pwd())\n"
+            @test read(`hello_script "aa bb" cc`, String) == "hello aa bb, cc\n"
+        end
+    end
 end
