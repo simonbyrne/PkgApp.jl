@@ -1,6 +1,10 @@
 using Test
 using PkgApp
 
+if Sys.iswindows()
+    @show get(ENV, "PATHEXT", nothing)
+end
+
 function with_temp_project(fn, pkgdir)
     temppkgdir = tempname()
     cp(pkgdir, temppkgdir)
