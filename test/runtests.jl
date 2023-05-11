@@ -19,22 +19,23 @@ end
 with_temp_project(joinpath(@__DIR__, "TestApp")) do pkgdir
     PkgApp.build(;use_sysimage=false)
 
-    @test read(`$pkgdir/bin/hello_function`, String) == "hello from $(pwd())\n"
-    @test read(`$pkgdir/bin/hello_function "aa bb" cc`, String) == "hello aa bb, cc\n"
+    @test read(`$(joinpath(pkgdir,"bin", "hello_function"))`, String) == "hello from $(pwd())\n"
+    @test read(`$(joinpath(pkgdir,"bin", "hello_function")) "aa bb" cc`, String) == "hello aa bb, cc\n"
 
-    @test read(`$pkgdir/bin/hello_script`, String) == "hello from $(pwd())\n"
-    @test read(`$pkgdir/bin/hello_script "aa bb" cc`, String) == "hello aa bb, cc\n"
+    @test read(`$(joinpath(pkgdir,"bin", "hello_script"))`, String) == "hello from $(pwd())\n"
+    @test read(`$(joinpath(pkgdir,"bin", "hello_script"))`, String) == "hello aa bb, cc\n"
 
 end
 
+if Sys.WORD_SIZE == 64
+    with_temp_project(joinpath(@__DIR__, "TestApp")) do pkgdir
+        PkgApp.build(;use_sysimage=true)
 
-with_temp_project(joinpath(@__DIR__, "TestApp")) do pkgdir
-    PkgApp.build(;use_sysimage=true)
+        @test read(`$(joinpath(pkgdir,"bin", "hello_function"))`, String) == "hello from $(pwd())\n"
+        @test read(`$(joinpath(pkgdir,"bin", "hello_function")) "aa bb" cc`, String) == "hello aa bb, cc\n"
 
-    @test read(`$pkgdir/bin/hello_function`, String) == "hello from $(pwd())\n"
-    @test read(`$pkgdir/bin/hello_function "aa bb" cc`, String) == "hello aa bb, cc\n"
+        @test read(`$(joinpath(pkgdir,"bin", "hello_script"))`, String) == "hello from $(pwd())\n"
+        @test read(`$(joinpath(pkgdir,"bin", "hello_script")) "aa bb" cc`, String) == "hello aa bb, cc\n"
 
-    @test read(`$pkgdir/bin/hello_script`, String) == "hello from $(pwd())\n"
-    @test read(`$pkgdir/bin/hello_script "aa bb" cc`, String) == "hello aa bb, cc\n"
-
+    end
 end
