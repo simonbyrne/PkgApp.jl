@@ -28,12 +28,12 @@ with_temp_project(joinpath(@__DIR__, "TestApp")) do pkgdir
     bindir = joinpath(pkgdir, "bin")
     @show readdir(bindir)
 
-    withenv("PATH" =>string(ENV["PATH"], Sys.iswindows() ? ";" : ":", bindir)) do
-        @test read(`$("hello_function$execext")`, String) == "hello from $(pwd())\n"
-        @test read(`$("hello_function$execext") "aa bb" cc`, String) == "hello aa bb, cc\n"
+    withenv("PATH" => string(ENV["PATH"], Sys.iswindows() ? ";" : ":", bindir)) do
+        @test read(`hello_function`, String) == "hello from $(pwd())\n"
+        @test read(`hello_function "aa bb" cc`, String) == "hello aa bb, cc\n"
 
-        @test read(`$("hello_script$execext")`, String) == "hello from $(pwd())\n"
-        @test read(`$("hello_script$execext") "aa bb" cc`, String) == "hello aa bb, cc\n"
+        @test read(`hello_script`, String) == "hello from $(pwd())\n"
+        @test read(`hello_script "aa bb" cc`, String) == "hello aa bb, cc\n"
     end
 end
 
@@ -43,13 +43,13 @@ if Sys.WORD_SIZE == 64
         bindir = joinpath(pkgdir, "bin")
         @show readdir(bindir)
 
-        withenv("PATH" =>string(ENV["PATH"], Sys.iswindows() ? ";" : ":", bindir)) do
+        withenv("PATH" => string(ENV["PATH"], Sys.iswindows() ? ";" : ":", bindir)) do
     
-            @test read(`$("hello_function$execext")`, String) == "hello from $(pwd())\n"
-            @test read(`$("hello_function$execext") "aa bb" cc`, String) == "hello aa bb, cc\n"
-
-            @test read(`$("hello_script$execext")`, String) == "hello from $(pwd())\n"
-            @test read(`$("hello_script$execext") "aa bb" cc`, String) == "hello aa bb, cc\n"
+            @test read(`hello_function`, String) == "hello from $(pwd())\n"
+            @test read(`hello_function "aa bb" cc`, String) == "hello aa bb, cc\n"
+    
+            @test read(`hello_script`, String) == "hello from $(pwd())\n"
+            @test read(`hello_script "aa bb" cc`, String) == "hello aa bb, cc\n"
         end
     end
 end
