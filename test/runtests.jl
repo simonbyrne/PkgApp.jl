@@ -25,25 +25,31 @@ end
 with_temp_project(joinpath(@__DIR__, "TestApp")) do pkgdir
     PkgApp.build(;use_sysimage=false)
 
-    @show readdir(joinpath(pkgdir, "bin"))
+    bindir = joinpath(pkgdir, "bin")
+    @show readdir(bindir)
 
-    @test read(`$(joinpath(pkgdir, "bin", "hello_function$execext"))`, String) == "hello from $(pwd())\n"
-    @test read(`$(joinpath(pkgdir, "bin", "hello_function$execext")) "aa bb" cc`, String) == "hello aa bb, cc\n"
+    withenv("PATH" =>string(ENV["PATH"], Sys.iswindows() ? ";" : ":", bindir)) do
+        @test read(`$("hello_function$execext")`, String) == "hello from $(pwd())\n"
+        @test read(`$("hello_function$execext") "aa bb" cc`, String) == "hello aa bb, cc\n"
 
-    @test read(`$(joinpath(pkgdir, "bin", "hello_script$execext"))`, String) == "hello from $(pwd())\n"
-    @test read(`$(joinpath(pkgdir, "bin", "hello_script$execext")) "aa bb" cc`, String) == "hello aa bb, cc\n"
-
+        @test read(`$("hello_script$execext")`, String) == "hello from $(pwd())\n"
+        @test read(`$("hello_script$execext") "aa bb" cc`, String) == "hello aa bb, cc\n"
+    end
 end
 
 if Sys.WORD_SIZE == 64
     with_temp_project(joinpath(@__DIR__, "TestApp")) do pkgdir
         PkgApp.build(;use_sysimage=true)
+        bindir = joinpath(pkgdir, "bin")
+        @show readdir(bindir)
 
-        @test read(`$(joinpath(pkgdir, "bin", "hello_function$execext"))`, String) == "hello from $(pwd())\n"
-        @test read(`$(joinpath(pkgdir, "bin", "hello_function$execext")) "aa bb" cc`, String) == "hello aa bb, cc\n"
+        withenv("PATH" =>string(ENV["PATH"], Sys.iswindows() ? ";" : ":", bindir)) do
+    
+            @test read(`$("hello_function$execext")`, String) == "hello from $(pwd())\n"
+            @test read(`$("hello_function$execext") "aa bb" cc`, String) == "hello aa bb, cc\n"
 
-        @test read(`$(joinpath(pkgdir, "bin", "hello_script$execext"))`, String) == "hello from $(pwd())\n"
-        @test read(`$(joinpath(pkgdir, "bin", "hello_script$execext")) "aa bb" cc`, String) == "hello aa bb, cc\n"
-
+            @test read(`$("hello_script$execext")`, String) == "hello from $(pwd())\n"
+            @test read(`$("hello_script$execext") "aa bb" cc`, String) == "hello aa bb, cc\n"
+        end
     end
 end
